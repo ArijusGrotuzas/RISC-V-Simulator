@@ -11,6 +11,7 @@ public class IsaSim {
     static int[] reg = new int[32];
     static final ArrayList<Integer> program = new ArrayList<>();
     private static boolean execute = true;
+    private static boolean branch = false;
 
     /**
      *
@@ -26,6 +27,16 @@ public class IsaSim {
         switch (opcode) {
             case 0x37 -> reg[rd] = (uImm << 12); // LUI
             case 0x17 -> reg[rd] = pc + (uImm << 12); // AUIPC
+            case 0x63 -> { // BEQ - BGEU
+                switch (funct3){
+                    case 0x0 -> branch = reg[rs1] == reg[rs2]; // BEQ
+                    case 0x1 -> branch = reg[rs1] != reg[rs2]; // BNE
+                    case 0x4 -> branch = reg[rs1] < reg[rs2]; // BLT
+                    case 0x5 -> branch = reg[rs1] >= reg[rs2]; // BGE
+                    case 0x6 -> branch = Integer.compareUnsigned(reg[rs1], reg[rs2]) < 0; // BLTU
+                    case 0x7 -> branch = Integer.compareUnsigned(reg[rs1], reg[rs2]) > 0; // BGEU
+                }
+            }
             case 0x13 -> { // ADDI - SRAI
                 switch (funct3) {
                     case 0x0 -> reg[rd] = reg[rs1] + iImm; // ADDI
@@ -105,16 +116,13 @@ public class IsaSim {
             readProgram(args[0]);
         }
         else{
-            readProgram("tests/shift2.bin");
+            readProgram("tests/task2/branchtrap.bin");
         }
-
-        int p = -100;
-        System.out.println(Integer.toBinaryString(p));
-        System.out.println(Integer.toBinaryString(p >>> 5));
-        pc = 0;
 
         // For loop for executing the program
         do {
+            branch = false;
+
             // Get all the fields from the instruction
             int instr = program.get(pc >> 2);
             int opcode = instr & 0x7f;
@@ -124,12 +132,15 @@ public class IsaSim {
             int funct3 = (instr >> 12) & 0x7;
             int iImm = (instr >> 20);
             int uImm = (instr >> 12);
-
-            //System.out.println("Operation invoked: " + opcode);
+            int bImm = ((instr >> 19) & 0xFFFFF000) + ((instr << 4) & 0x800) + ((instr >> 20) & 0x7E0) + ((instr >> 7) & 0x1e);
+            
             executeOP(opcode, rd, rs1, rs2, iImm, uImm, funct3);
 
-            // Increment the PC
-            pc += 4;
+            // Branch Control
+            if (!branch) pc += 4;
+            else {
+                pc = pc + bImm;
+            }
 
             //Dump the values of the registers
             for (int j : reg) {
