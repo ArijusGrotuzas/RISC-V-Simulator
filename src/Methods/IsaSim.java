@@ -4,12 +4,14 @@ import java.awt.desktop.ScreenSleepEvent;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class IsaSim {
 
     static int pc;
     static int[] reg = new int[32];
     static final ArrayList<Integer> program = new ArrayList<>();
+    static byte[] memory = new byte[1048576];
     private static boolean execute = true;
     private static boolean branch = false;
 
@@ -23,10 +25,18 @@ public class IsaSim {
      * @param uImm F
      * @param funct3 F
      */
-    public static void executeOP(int opcode, int rd, int rs1, int rs2, int iImm, int uImm, int funct3){
+    public static void executeOP(int opcode, int rd, int rs1, int rs2, int iImm, int uImm, int sImm, int funct3){
         switch (opcode) {
             case 0x37 -> reg[rd] = (uImm << 12); // LUI
             case 0x17 -> reg[rd] = pc + (uImm << 12); // AUIPC
+            case 0x67 -> { // JALR
+                reg[rd] = pc + 4;
+                branch = true;
+            }
+            case 0x6F -> { // JAL
+                reg[rd] = pc + 4;
+                branch = true;
+            }
             case 0x63 -> { // BEQ - BGEU
                 switch (funct3){
                     case 0x0 -> branch = reg[rs1] == reg[rs2]; // BEQ
@@ -37,9 +47,35 @@ public class IsaSim {
                     case 0x7 -> branch = Integer.compareUnsigned(reg[rs1], reg[rs2]) > 0; // BGEU
                 }
             }
+            case 0x3 -> { // LB - LHU
+                switch (funct3){
+                    case 0x0 -> reg[rd] = memory[reg[rs1] + iImm]; // LB
+                    case 0x1 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + (memory[reg[rs1] + iImm + 1] << 8); // LH
+                    case 0x2 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + ((memory[reg[rs1] + iImm + 1] & 0xFF) << 8) + ((memory[reg[rs1] + iImm + 2] & 0xFF) << 16) + (memory[reg[rs1] + iImm + 3] << 24);// LW
+                    case 0x4 -> reg[rd] = memory[reg[rs1] + iImm] & 0xFF;
+                    case 0x5 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + ((memory[reg[rs1]+ iImm + 1] & 0xFF) << 8);
+                }
+            }
+            case 0x23 -> { // SB - SW
+                switch (funct3){
+                    case 0x0 -> memory[reg[rs1] + sImm] = (byte) reg[rs2]; // SB
+                    case 0x1 -> { // SH
+                        memory[reg[rs1] + sImm] = (byte) reg[rs2];
+                        memory[reg[rs1] + sImm + 1] = (byte) (reg[rs2] >> 8);
+                    }
+                    case 0x2 -> { // SW
+                        memory[reg[rs1] + sImm] = (byte) reg[rs2];
+                        memory[reg[rs1] + sImm + 1] = (byte) (reg[rs2] >> 8);
+                        memory[reg[rs1] + sImm + 2] = (byte) (reg[rs2] >> 16);
+                        memory[reg[rs1] + sImm + 3] = (byte) (reg[rs2] >> 24);
+                    }
+                }
+            }
             case 0x13 -> { // ADDI - SRAI
                 switch (funct3) {
-                    case 0x0 -> reg[rd] = reg[rs1] + iImm; // ADDI
+                    case 0x0 -> {
+                        reg[rd] = reg[rs1] + iImm; // ADDI
+                    }
                     case 0x2 -> reg[rd] = (reg[rs1] < iImm) ? 1:0; // SLTI
                     case 0x3 -> reg[rd] = (Integer.compareUnsigned(reg[rs1], iImm) < 0) ? 1:0; // SLTIU
                     case 0x4 -> reg[rd] = reg[rs1] ^ iImm; // XORI
@@ -116,7 +152,7 @@ public class IsaSim {
             readProgram(args[0]);
         }
         else{
-            readProgram("tests/task2/branchtrap.bin");
+            readProgram("tests/task3/test_jalr.bin");
         }
 
         // For loop for executing the program
@@ -130,16 +166,24 @@ public class IsaSim {
             int rs1 = (instr >> 15) & 0x01f;
             int rs2 = (instr >> 20) & 0x01f;
             int funct3 = (instr >> 12) & 0x7;
+
+            // Immediates
             int iImm = (instr >> 20);
             int uImm = (instr >> 12);
             int bImm = ((instr >> 19) & 0xFFFFF000) + ((instr << 4) & 0x800) + ((instr >> 20) & 0x7E0) + ((instr >> 7) & 0x1e);
-            
-            executeOP(opcode, rd, rs1, rs2, iImm, uImm, funct3);
+            int jImm = (instr & 0x80000000) + (instr & 0xFF000) + ((instr >> 9) & 0x800) + ((instr >> 20) & 0x7FE);
+            int sImm = ((instr >> 20) & 0xFFFFFFE0) + ((instr >> 7) & 0x1F);
+
+            executeOP(opcode, rd, rs1, rs2, iImm, uImm, sImm, funct3);
 
             // Branch Control
             if (!branch) pc += 4;
             else {
-                pc = pc + bImm;
+                switch (opcode){
+                    case 0x67 -> pc = reg[rs1] + iImm;
+                    case 0x6F -> pc = pc + jImm;
+                    case 0x63 -> pc = pc + bImm;
+                }
             }
 
             //Dump the values of the registers
