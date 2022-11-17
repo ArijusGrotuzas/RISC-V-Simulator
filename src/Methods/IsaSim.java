@@ -29,11 +29,7 @@ public class IsaSim {
         switch (opcode) {
             case 0x37 -> reg[rd] = (uImm << 12); // LUI
             case 0x17 -> reg[rd] = pc + (uImm << 12); // AUIPC
-            case 0x67 -> { // JALR
-                reg[rd] = pc + 4;
-                branch = true;
-            }
-            case 0x6F -> { // JAL
+            case 0x67, 0x6F -> { // JALR - JAL
                 reg[rd] = pc + 4;
                 branch = true;
             }
@@ -51,7 +47,7 @@ public class IsaSim {
                 switch (funct3){
                     case 0x0 -> reg[rd] = memory[reg[rs1] + iImm]; // LB
                     case 0x1 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + (memory[reg[rs1] + iImm + 1] << 8); // LH
-                    case 0x2 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + ((memory[reg[rs1] + iImm + 1] & 0xFF) << 8) + ((memory[reg[rs1] + iImm + 2] & 0xFF) << 16) + (memory[reg[rs1] + iImm + 3] << 24);// LW
+                    case 0x2 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + ((memory[reg[rs1] + iImm + 1] & 0xFF) << 8) + ((memory[reg[rs1] + iImm + 2] & 0xFF) << 16) + (memory[reg[rs1] + iImm + 3] << 24); // LW
                     case 0x4 -> reg[rd] = memory[reg[rs1] + iImm] & 0xFF;
                     case 0x5 -> reg[rd] = (memory[reg[rs1] + iImm] & 0xFF) + ((memory[reg[rs1]+ iImm + 1] & 0xFF) << 8);
                 }
@@ -73,9 +69,7 @@ public class IsaSim {
             }
             case 0x13 -> { // ADDI - SRAI
                 switch (funct3) {
-                    case 0x0 -> {
-                        reg[rd] = reg[rs1] + iImm; // ADDI
-                    }
+                    case 0x0 -> reg[rd] = reg[rs1] + iImm; // ADDI
                     case 0x2 -> reg[rd] = (reg[rs1] < iImm) ? 1:0; // SLTI
                     case 0x3 -> reg[rd] = (Integer.compareUnsigned(reg[rs1], iImm) < 0) ? 1:0; // SLTIU
                     case 0x4 -> reg[rd] = reg[rs1] ^ iImm; // XORI
@@ -114,8 +108,11 @@ public class IsaSim {
             }
             case 0x73 -> { // ECALL
                 switch (reg[17]){
-                    case 0xa -> execute = false; // EXIT
-                    default -> System.out.println("ECALL");
+                    case 0xa -> {
+                        execute = false; // EXIT
+                        System.out.println("Program Exit");
+                    }
+                    default -> System.out.println("Unrecognized ECALL");
                 }
             }
             default -> System.out.println("Unrecognized operation: " + opcode);
@@ -152,7 +149,7 @@ public class IsaSim {
             readProgram(args[0]);
         }
         else{
-            readProgram("tests/task3/test_jalr.bin");
+            readProgram("tests/task3/loop.bin");
         }
 
         // For loop for executing the program
@@ -171,29 +168,28 @@ public class IsaSim {
             int iImm = (instr >> 20);
             int uImm = (instr >> 12);
             int bImm = ((instr >> 19) & 0xFFFFF000) + ((instr << 4) & 0x800) + ((instr >> 20) & 0x7E0) + ((instr >> 7) & 0x1e);
-            int jImm = (instr & 0x80000000) + (instr & 0xFF000) + ((instr >> 9) & 0x800) + ((instr >> 20) & 0x7FE);
+            int jImm = ((instr >> 11) & 0xFFF00000) + (instr & 0xFF000) + ((instr >> 9) & 0x800) + ((instr >> 20) & 0x7FE);
             int sImm = ((instr >> 20) & 0xFFFFFFE0) + ((instr >> 7) & 0x1F);
 
             executeOP(opcode, rd, rs1, rs2, iImm, uImm, sImm, funct3);
+            reg[0] = 0;
 
             // Branch Control
             if (!branch) pc += 4;
             else {
                 switch (opcode){
-                    case 0x67 -> pc = reg[rs1] + iImm;
-                    case 0x6F -> pc = pc + jImm;
-                    case 0x63 -> pc = pc + bImm;
+                    case 0x67 -> pc = (reg[rs1] + iImm) & 0xfffffffe; // JALR
+                    case 0x6F -> pc = pc + jImm; // JAL
+                    case 0x63 -> pc = pc + bImm; // B
                 }
             }
 
             //Dump the values of the registers
             for (int j : reg) {
-                System.out.print(j + " ");
+                System.out.print(Integer.toHexString(j) + " ");
             }
             System.out.println();
         } while ((pc >> 2) < program.size() && execute);
-
-        System.out.println("Program exit");
     }
 
 }
