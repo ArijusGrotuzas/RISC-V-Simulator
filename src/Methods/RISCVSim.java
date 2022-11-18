@@ -3,7 +3,6 @@ package Methods;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * <h1>RISCVSim</h1>
@@ -220,7 +219,6 @@ public class RISCVSim {
                 System.out.println("Could not read any binary file ...");
             }
         }
-
 
         // For loop for executing the program
         do {
