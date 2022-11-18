@@ -3,11 +3,12 @@ package Methods;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * <h1>RISCVSim</h1>
  * RISC-V ISA simulator.
- * 
+ *
  * @author Arijus Grotuzas
  */
 public class RISCVSim {
@@ -19,6 +20,12 @@ public class RISCVSim {
     private static boolean execute = true;
     private static boolean branch = false;
 
+    /**
+     * @return Array of registers (Java int[])
+     */
+    public static int[] getReg(){
+        return reg;
+    }
 
     /**
      * Executes an instruction from the subset of RISC-V ISA - RV32I
@@ -195,20 +202,30 @@ public class RISCVSim {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         if(args.length > 0){
-            readProgram(args[0]);
+            try {
+                readProgram(args[0]);
+            }
+            catch (IOException e) {
+                System.out.println("Could not read provided binary file ...");
+            }
         }
         else{
-            readProgram("tests/task1/set.bin");
+            try{
+                readProgram("tests/task1/addlarge.bin");
+            }
+            catch (IOException e){
+                System.out.println("Could not read any binary file ...");
+            }
         }
+
 
         // For loop for executing the program
         do {
             branch = false;
 
-            // Get all the fields from the instruction
             int instr = getInstr(pc);
             int opcode = instr & 0x7f;
 
@@ -229,10 +246,9 @@ public class RISCVSim {
         } while (pc < memory.length && execute);
 
         //Dump the values of the registers
-        for (int j : reg) {
-            System.out.print(Integer.toHexString(j) + " ");
+        for (int i = 0; i < reg.length; i++) {
+            System.out.println("x" + i + ":" + Integer.toHexString(reg[i]) + " ");
         }
-        System.out.println();
     }
 
 }
