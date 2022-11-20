@@ -25,22 +25,22 @@ public class IsaSimTest {
     }
 
     @Test
-    public void testExecuteOP() throws IOException {
+    public void testExecuteInstr() throws IOException {
         RISCVSim.readProgram("tests/task1/addlarge.bin");
 
         int instr = RISCVSim.getInstr(0);
         int opcode = instr & 0x7f;
-        RISCVSim.executeOP(instr, opcode);
+        RISCVSim.executeInstr(instr, opcode);
         Assert.assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2147483648, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", Arrays.toString(RISCVSim.getReg()));
 
         instr = RISCVSim.getInstr(4);
         opcode = instr & 0x7f;
-        RISCVSim.executeOP(instr, opcode);
+        RISCVSim.executeInstr(instr, opcode);
         Assert.assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2147483647, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", Arrays.toString(RISCVSim.getReg()));
 
         instr = RISCVSim.getInstr(8);
         opcode = instr & 0x7f;
-        RISCVSim.executeOP(instr, opcode);
+        RISCVSim.executeInstr(instr, opcode);
         Assert.assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2147483647, -2147483648, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", Arrays.toString(RISCVSim.getReg()));
     }
 }

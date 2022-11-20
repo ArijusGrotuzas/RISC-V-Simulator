@@ -32,7 +32,7 @@ public class RISCVSim {
      * @param instr A binary 32-bit instruction (Java int)
      * @param opcode A binary 7-bit opcode (Java int, leading bits must be 0)
      */
-    public static void executeOP(int instr, int opcode){
+    public static void executeInstr(int instr, int opcode){
         // Get most commonly used fields of instruction
         int rs1 = (instr >> 15) & 0x01f;
         int rs2 = (instr >> 20) & 0x01f;
@@ -227,7 +227,7 @@ public class RISCVSim {
             int instr = getInstr(pc);
             int opcode = instr & 0x7f;
 
-            executeOP(instr, opcode);
+            executeInstr(instr, opcode);
             reg[0] = 0;
 
             // Branch Control
@@ -243,7 +243,7 @@ public class RISCVSim {
             }
         } while (pc < memory.length && execute);
 
-        //Dump the values of the registers
+        // Dump the values of the registers
         for (int i = 0; i < reg.length; i++) {
             System.out.println("x" + i + ":" + Integer.toHexString(reg[i]) + " ");
         }
