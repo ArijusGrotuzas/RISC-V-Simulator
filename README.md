@@ -14,3 +14,9 @@ Following environment calls are supported by the simulator based on [Ripes envir
 | 34 | (integer to print) | print_hex |
 | 35 | (integer to print) | print_bin |
 | 36 | (integer to print) | print_unsigned |
+
+# Executing JAR
+
+```shell
+java -jar RISC-V-Simulator.jar <path to binary>
+```
