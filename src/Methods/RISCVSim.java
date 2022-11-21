@@ -208,7 +208,8 @@ public class RISCVSim {
                 readProgram(args[0]);
             }
             catch (IOException e) {
-                System.out.println("Could not read provided binary file ...");
+                System.out.println("Could not read provided binary file...");
+                System.exit(-1);
             }
         }
         else{
@@ -216,7 +217,8 @@ public class RISCVSim {
                 readProgram("tests/task1/addlarge.bin");
             }
             catch (IOException e){
-                System.out.println("Could not read any binary file ...");
+                System.out.println("Could not read any binary file...");
+                System.exit(-1);
             }
         }
 
