@@ -18,5 +18,5 @@ Following environment calls are supported by the simulator based on [Ripes envir
 ## Executing JAR
 
 ```shell
-java -jar RISC-V-Simulator.jar <path to binary>
+java -jar RISC-V-Simulator.jar <path to binary file>
 ```
