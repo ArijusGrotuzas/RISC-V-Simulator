@@ -17,5 +17,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="commons-cli-1.5.0" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
   </component>
 </module>

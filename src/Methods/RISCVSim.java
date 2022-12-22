@@ -3,6 +3,7 @@ package Methods;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import org.apache.commons.cli.*;
 
 /**
  * <h1>RISCVSim</h1>
@@ -188,7 +189,7 @@ public class RISCVSim {
     /**
      * Reads a binary file containing the machine code in bytes and loads it into memory
      *
-     * @param filename String containing the name of the binary file (Java String)
+     * @param filename String containing the path to the binary file (Java String)
      * @throws IOException Could not read a specified file
      */
     public static void readProgram(String filename) throws IOException {
@@ -201,25 +202,19 @@ public class RISCVSim {
         }
     }
 
-    public static void main(String[] args) {
-
-        if(args.length > 0){
-            try {
-                readProgram(args[0]);
-            }
-            catch (IOException e) {
-                System.out.println("Could not read provided binary file...");
-                System.exit(-1);
-            }
+    /**
+     * Executes a RISC-V program from a binary file containing a machine code
+     *
+     * @param filename String containing the path to the binary file (Java String)
+     */
+    public static void simulateISA(String filename){
+        // Read the program into the memory
+        try {
+            readProgram(filename);
         }
-        else{
-            try{
-                readProgram("tests/task1/addlarge.bin");
-            }
-            catch (IOException e){
-                System.out.println("Could not read any binary file...");
-                System.exit(-1);
-            }
+        catch (IOException e) {
+            System.out.println("Could not read a binary file at '" + filename + "' ...");
+            System.exit(-1);
         }
 
         // For loop for executing the program
@@ -249,6 +244,28 @@ public class RISCVSim {
         for (int i = 0; i < reg.length; i++) {
             System.out.println("x" + i + ":" + Integer.toHexString(reg[i]) + " ");
         }
+    }
+
+    public static void main(String[] args) {
+        Options options = new Options();
+        Option input = new Option("i", "input", true, "input binary file path");
+        input.setRequired(true);
+        options.addOption(input);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd = null;
+
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("riscv-simulator", options);
+            System.exit(-1);
+        }
+
+        String filename = cmd.getOptionValue("input");
+        simulateISA(filename);
     }
 
 }
